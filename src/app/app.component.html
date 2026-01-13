@@ -1,0 +1,369 @@
+<div class="app-container">
+
+  <header class="main-header">
+    <div class="header-content">
+      <div class="logo" (click)="handleBackToHome(); handleFilterChange('all')">
+        <div class="logo-icon">SP</div>
+        <span class="logo-text">Speed Play</span>
+      </div>
+
+      <nav class="main-nav">
+        <button (click)="handleFilterChange('all')" [class.active]="activeFilter === 'all'">Inicio</button>
+        <button (click)="handleFilterChange('popular')" [class.active]="activeFilter === 'popular'">Populares</button>
+        <button (click)="handleFilterChange('recent')" [class.active]="activeFilter === 'recent'">Recientes</button>
+      </nav>
+
+      <div class="header-actions">
+        <button class="search-btn">🔍</button>
+
+        @if (currentUser) {
+        <button class="notifications-btn">
+          🔔
+          @if (notificationCount > 0) {
+          <span class="notification-badge">{{ notificationCount }}</span>
+          }
+        </button>
+        }
+
+        @if (!currentUser) {
+        <button class="btn-google-login" (click)="loginWithGoogle()">
+          <span style="font-weight:bold; color:#4285F4;">G</span> Iniciar Sesión
+        </button>
+        } @else {
+        <button class="profile-btn" (click)="handleProfileClick()">
+          @if (userProfile.Avatar) {
+          <img [src]="userProfile.Avatar" class="profile-avatar-img" alt="avatar">
+          } @else {
+          <div class="profile-avatar">{{ userProfile.Username.substring(0, 1).toUpperCase() }}</div>
+          }
+          <span>{{ userProfile.Username }}</span>
+        </button>
+        }
+      </div>
+    </div>
+  </header>
+
+  @if (showProfile) {
+  <div class="profile-view">
+    <div class="profile-header">
+      <button class="btn-back" (click)="handleBackToHome()">← Volver</button>
+    </div>
+
+    <div class="profile-container">
+      <div class="profile-card">
+        <div class="profile-banner"></div>
+        <div class="profile-info">
+          @if (userProfile.Avatar) {
+          <img [src]="userProfile.Avatar" class="profile-avatar-large-img" alt="avatar">
+          } @else {
+          <div class="profile-avatar-large">{{ userProfile.Username.substring(0, 1).toUpperCase() }}</div>
+          }
+
+          <div class="profile-details">
+            <h1>{{ userProfile.Username }} @if(isAdmin){<span class="admin-badge">ADMIN</span>}</h1>
+            <p class="profile-rank">🏆 Rank Global: #{{ userProfile.Rank }}</p>
+
+            <div class="profile-stats">
+              <div class="stat"><span class="stat-value">{{ userProfile.Followers }}</span><span class="stat-label">Seguidores</span></div>
+              <div class="stat"><span class="stat-value">{{ userProfile.TotalRuns }}</span><span class="stat-label">Aprobados</span></div>
+              <div class="stat"><span class="stat-value" style="color:#e53e3e">{{ userRejectedSpeedruns.length }}</span><span class="stat-label">Rechazados</span></div>
+            </div>
+
+            <div class="profile-actions">
+              <button class="btn-secondary" (click)="logout()">Cerrar Sesión</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-tabs">
+        <button (click)="handleTabChange('speedruns')" [class.active]="activeTab === 'speedruns'">Mis Speedruns ({{userSpeedruns.length}})</button>
+        <button (click)="handleTabChange('rejected')" [class.active]="activeTab === 'rejected'" style="color: #e53e3e;">Rechazados ({{userRejectedSpeedruns.length}})</button>
+        <button (click)="handleTabChange('followers')" [class.active]="activeTab === 'followers'">Seguidores</button>
+      </div>
+
+      @if (activeTab === 'speedruns') {
+      <div class="speedruns-list">
+        @if (userSpeedruns.length === 0) {
+        <p style="color:#a0aec0; text-align:center; padding:20px;">No tienes speedruns activos.</p>
+        }
+        @for (speedrun of userSpeedruns; track speedrun.SpeedrunID) {
+        <div class="speedrun-card">
+          <div class="speedrun-game-icon">{{ speedrun.game.substring(0, 1) }}</div>
+          <div class="speedrun-info">
+            <h3>{{ speedrun.game }}</h3>
+            <p class="speedrun-category">
+              {{ speedrun.category }}
+              @if(speedrun.Status === 'Pending') { <span class="badge-pending">En Revisión</span> }
+              @if(speedrun.Status === 'Verified') { <span class="badge-verified">Verificado</span> }
+            </p>
+          </div>
+          <div class="speedrun-time">
+            <span class="time">{{ speedrun.time }}</span>
+            <span class="date">{{ speedrun.date }}</span>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-left:16px;">
+            <button class="btn-icon" (click)="playVideo(speedrun.videoURL || speedrun.VideoURL || '')">▶️</button>
+
+            @if(isAdmin) {
+            @if(speedrun.Status !== 'Verified') {
+            <button class="btn-admin-ok" (click)="verifyRun(speedrun)" title="Verificar">✅</button>
+            
+            }
+            <button class="btn-admin-no" (click)="rejectRun(speedrun)" title="Rechazar">🚫</button>
+            <button class="btn-admin-del" (click)="deleteRun(speedrun)" title="Eliminar">🗑️</button>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      }
+
+      @if (activeTab === 'rejected') {
+      <div class="speedruns-list">
+        @if (userRejectedSpeedruns.length === 0) {
+        <p style="color:#a0aec0; text-align:center; padding:20px;">¡Excelente! No tienes speedruns rechazados.</p>
+        }
+        @for (speedrun of userRejectedSpeedruns; track speedrun.SpeedrunID) {
+        <div class="speedrun-card" style="border-color: #e53e3e; background-color: rgba(229, 62, 62, 0.05);">
+          <div class="speedrun-game-icon" style="color: #e53e3e;">✖</div>
+          <div class="speedrun-info">
+            <h3 style="color: #fc8181">{{ speedrun.game }}</h3>
+            <p class="speedrun-category">{{ speedrun.category }} - <b style="color:#e53e3e">RECHAZADO</b></p>
+          </div>
+          <div class="speedrun-time">
+            <span class="time">{{ speedrun.time }}</span>
+            <span class="date">{{ speedrun.date }}</span>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-left:16px;">
+            <button class="btn-icon" style="background-color: #e53e3e;" (click)="playVideo(speedrun.videoURL || speedrun.VideoURL || '')">▶️</button>
+            @if(isAdmin) {
+            <button class="btn-admin-ok" (click)="verifyRun(speedrun)" title="Verificar">✅</button>
+            <button class="btn-admin-del" (click)="deleteRun(speedrun)" title="Eliminar">🗑️</button>
+            }
+          </div>
+        </div>
+        }
+      </div>
+      }
+    </div>
+  </div>
+  }
+
+  @else if (showRanking && selectedGame) {
+  <div class="ranking-view">
+    <div class="ranking-header">
+      <button class="btn-back" (click)="handleBackToHome()">← Volver</button>
+    </div>
+
+    <div class="ranking-container">
+      <div class="game-banner">
+        <div class="game-banner-bg"></div>
+        <div class="game-banner-content">
+          <div class="game-icon-large">
+            @if (selectedGame.ImageURL) {
+            <img [src]="selectedGame.ImageURL" style="width:100%; height:100%; object-fit:cover; border-radius:12px;">
+            } @else {
+            <span>{{ selectedGame.Title.substring(0, 1) }}</span>
+            }
+          </div>
+
+          <div class="game-info">
+            <h1>{{ selectedGame.Title }}</h1>
+            <div class="game-meta">
+              <span>{{ selectedGame.Year }}</span>
+              <span>•</span>
+              <span>{{ gameStats.totalSpeedruns }} Runs Verificados</span>
+            </div>
+          </div>
+          <button class="btn-submit-run" (click)="openSubmitModal()">Subir tu speedrun</button>
+        </div>
+      </div>
+
+      <div class="game-stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-content">
+            <span class="stat-value">{{ gameStats.worldRecord }}</span>
+            <span class="stat-label">Récord Mundial</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-content">
+            <span class="stat-value">{{ gameStats.totalSpeedruns }}</span>
+            <span class="stat-label">Speed Runs</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📊</div>
+          <div class="stat-content">
+            <span class="stat-value">{{ gameStats.averageTime }}</span>
+            <span class="stat-label">Promedio</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ranking-section">
+        <div class="ranking-header-controls">
+          <h2>Ranking Global @if(isAdmin){<span style="font-size:0.6em; color:#e53e3e">(Modo Admin)</span>}</h2>
+
+          <div class="ranking-filters-container">
+            <div class="filter-group">
+              <label>Categoría:</label>
+              <select [(ngModel)]="selectedCategoryFilter" (change)="applyFilters()" class="filter-select">
+                <option value="Todas">Todas</option>
+                @for (cat of categories; track cat.CategoryID) {
+                <option [value]="cat.CategoryName">{{ cat.CategoryName }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>Plataforma:</label>
+              <select [(ngModel)]="selectedPlatformFilter" (change)="applyFilters()" class="filter-select">
+                <option value="Todas">Todas</option>
+                @for (platform of getUniquePlatforms(); track platform) {
+                <option [value]="platform">{{ platform }}</option>
+                }
+              </select>
+            </div>
+
+            @if (selectedCategoryFilter !== 'Todas' || selectedPlatformFilter !== 'Todas') {
+            <button class="btn-clear-filters" (click)="clearFilters()">✖ Limpiar filtros</button>
+            }
+          </div>
+        </div>
+
+        <div class="ranking-table">
+          <div class="ranking-table-header" [class.admin-grid]="isAdmin">
+            <span class="col-rank">#</span>
+            <span class="col-user">USUARIO</span>
+            <span class="col-time">TIEMPO</span>
+            <span class="col-category">CATEGORÍA</span>
+            <span class="col-platform">PLATAFORMA</span>
+            <span class="col-date">FECHA</span>
+            @if(isAdmin) { <span class="col-status">ESTADO</span> }
+            <span class="col-actions">ACCIONES</span>
+          </div>
+
+          @for (entry of getFilteredRankings(); track entry.SpeedrunID) {
+          <div class="ranking-row" [class.admin-grid]="isAdmin"
+               [class.top-rank]="entry.Rank > 0 && entry.Rank <= 3 && entry.Status === 'Verified'"
+               [style.opacity]="entry.Status === 'Rejected' ? '0.5' : '1'">
+
+            <span class="col-rank">
+              @if (entry.Status === 'Pending') { <span style="font-size:12px; color:#f6e05e">⏳</span> }
+              @else if (entry.Status === 'Rejected') { <span style="font-size:12px; color:#e53e3e">❌</span> }
+              @else if (entry.Rank === 1) { <span class="medal gold">🥇</span> }
+              @else if (entry.Rank === 2) { <span class="medal silver">🥈</span> }
+              @else if (entry.Rank === 3) { <span class="medal bronze">🥉</span> }
+              @else { {{ entry.Rank }} }
+            </span>
+
+            <span class="col-user">
+              <div class="user-info">
+                @if (entry.Avatar) {
+                <img [src]="entry.Avatar" class="user-avatar-img" [alt]="entry.Username">
+                } @else {
+                <div class="user-avatar">{{ entry.Username.substring(0, 2).toUpperCase() }}</div>
+                }
+                <span class="username-text">{{ entry.Username }}</span>
+              </div>
+            </span>
+
+            <span class="col-time">{{ entry.FormattedTime }}</span>
+            <span class="col-category"><span class="category-tag">{{ entry.CategoryName }}</span></span>
+            <span class="col-platform"><span class="platform-tag">{{ entry.PlatformName }}</span></span>
+            <span class="col-date">{{ formatDate(entry.CreatedAt) }}</span>
+
+            @if(isAdmin) {
+            <span class="col-status">
+              @if(entry.Status === 'Pending') { <span class="badge-pending">En revisión</span> }
+              @else if(entry.Status === 'Verified') { <span class="badge-verified">Verificado</span> }
+              @else { <span class="badge-rejected">Rechazado</span> }
+            </span>
+            }
+
+            <span class="col-actions" style="display:flex; gap:8px;">
+              <button class="btn-watch" (click)="playVideo(entry.VideoURL || entry.videoURL || '')">▶️</button>
+
+              @if(isAdmin) {
+              @if(entry.Status !== 'Verified') {
+              <button class="btn-admin-ok" (click)="verifyRun(entry)" title="Verificar">✅</button>
+              }
+              @if(entry.Status !== 'Rejected') {
+              <button class="btn-admin-no" (click)="rejectRun(entry)" title="Rechazar">🚫</button>
+              }
+              <button class="btn-admin-del" (click)="deleteRun(entry)" title="Eliminar">🗑️</button>
+              }
+            </span>
+          </div>
+          }
+          @if (getFilteredRankings().length === 0) {
+          <div class="no-results"><p>No hay speedruns con los filtros seleccionados.</p></div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  @else {
+  <main class="main-content">
+    <div class="content-wrapper">
+      <div class="hero-section">
+        <h1>{{ getWelcomeTitle() }}</h1>
+        <p class="hero-description">{{ getWelcomeDescription() }}</p>
+      </div>
+      <section class="game-section">
+        <div class="games-grid">
+          @for (game of displayedGames; track game.GameID) {
+          <div class="game-card" (click)="handleGameClick(game)">
+            <div class="game-card-image">
+              @if (game.ImageURL) { <img [src]="game.ImageURL" loading="lazy"> }
+              @else { <span>{{ game.Title.substring(0, 1) }}</span> }
+            </div>
+            <div class="game-card-content">
+              <h3>{{ game.Title }}</h3>
+              <div class="game-card-meta">
+                <span>{{ game.Year }}</span> • <span>{{ game.TotalSpeedruns }} Runs</span>
+              </div>
+            </div>
+          </div>
+          }
+        </div>
+      </section>
+    </div>
+  </main>
+  }
+
+  @if (showSubmitModal) {
+  <div class="modal-overlay" (click)="closeSubmitModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header"><h2>Subir Speedrun</h2><button class="modal-close" (click)="closeSubmitModal()">×</button></div>
+      <div class="modal-body">
+        <div class="form-group"><label>Categoría</label><select [(ngModel)]="speedrunForm.categoryID" class="form-control">@for (c of categories; track c.CategoryID){<option [value]="c.CategoryID">{{c.CategoryName}}</option>}</select></div>
+        <div class="form-group">
+          <label>Tiempo</label>
+          <div class="time-inputs">
+            <input type="number" [(ngModel)]="speedrunForm.timeHours" placeholder="HH" class="time-input">
+            <input type="number" [(ngModel)]="speedrunForm.timeMinutes" placeholder="MM" class="time-input">
+            <input type="number" [(ngModel)]="speedrunForm.timeSeconds" placeholder="SS" class="time-input">
+            <input type="number" [(ngModel)]="speedrunForm.timeMilliseconds" placeholder="ms" class="time-input">
+          </div>
+        </div>
+        <div class="form-group"><label>Video URL</label><input [(ngModel)]="speedrunForm.videoURL" class="form-control"></div>
+        <div class="form-group"><label>Plataforma</label><select [(ngModel)]="speedrunForm.platformID" class="form-control">@for(p of platforms; track p.PlatformID){<option [value]="p.PlatformID">{{p.PlatformName}}</option>}</select></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeSubmitModal()">Cancelar</button>
+        <button class="btn-submit" (click)="submitSpeedrun()">Enviar</button>
+      </div>
+    </div>
+  </div>
+  }
+
+</div>
