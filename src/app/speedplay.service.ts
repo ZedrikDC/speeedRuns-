@@ -16,7 +16,7 @@ import {
 export class SpeedplayService {
 
   // IMPORTANTE: Asegúrate de que esta URL coincida con tu backend
-  private apiUrl = 'https://abcd-1234.ngrok-free.app/api';
+  private apiUrl = 'http://localhost:5000/api';
 
   constructor(private http: HttpClient) { }
 
