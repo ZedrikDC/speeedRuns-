@@ -32,9 +32,11 @@
         } @else {
         <button class="profile-btn" (click)="handleProfileClick()">
           @if (userProfile.Avatar) {
-          <img [src]="userProfile.Avatar" class="profile-avatar-img" alt="avatar">
+          
+          <img [src]="currentUser?.photoURL" class="profile-avatar-img" alt="avatar">
           } @else {
           <div class="profile-avatar">{{ userProfile.Username.substring(0, 1).toUpperCase() }}</div>
+
           }
           <span>{{ userProfile.Username }}</span>
         </button>
